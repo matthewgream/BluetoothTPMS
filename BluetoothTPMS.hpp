@@ -1,0 +1,139 @@
+
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
+
+#include <BLEAdvertisedDevice.h>
+
+#include <vector>
+#include <optional>
+
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
+
+//
+// derived from https://github.com/andi38/TPMS
+//
+// BLE advertised device [38:89:00:00:36:02] -- Name: , Address: 38:89:00:00:36:02, manufacturer data: 801e180097a492, serviceUUID: 000027a5-0000-1000-8000-00805f9b34fb, rssi: -65
+// BLE found TPMS device: 38:89:00:00:36:02
+// Device:      address=38:89:00:00:36:02, name=N/A, rssi=-65, txpower=N/A
+// Pressure:    0.6 psi
+// Temperature: 24 C°
+// Battery:     3.0 V
+// Alarm:       10000000 (ZeroPressure)
+//     0011: <PAYLOAD>
+//     0000: 03 03 A5 27 03 08 42 52  08 FF 80 1E 18 00 97 A4   ...'..BR ........
+//     0010: 92                                                 .
+//
+
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
+
+void dump(const char* label, const uint8_t* data, const size_t size, const size_t offs = 0);
+String toBinaryString(uint8_t value);
+String join(const std::vector<String>& elements, const String& delimiter);
+
+// -----------------------------------------------------------------------------------------------
+
+struct TpmsData {
+
+    enum Alarm : uint8_t {
+        ZeroPressure = 1 << 7,
+        Rotating = 1 << 6,
+        StandingIdleFor15mins = 1 << 5,
+        BeginRotating = 1 << 4,
+        DecreasingPressureBelow207Psi = 1 << 3,
+        RisingPressure = 1 << 2,
+        DecreasingPressureAbove207Psi = 1 << 1,
+        Unspecified = 1 << 0,
+        LowBattery = 0xFF
+    };
+
+    uint16_t pressure{};
+    uint8_t temperature{};
+    uint8_t battery{};
+    uint8_t alarms{};
+
+    bool _valid{ false };
+
+    std::vector<String> alarmStrings() const {
+        static const std::pair<Alarm, const char*> mappings[] = {
+            { Alarm::ZeroPressure, "ZeroPressure" },
+            { Alarm::Rotating, "Rotating" },
+            { Alarm::StandingIdleFor15mins, "StandingIdleFor15mins" },
+            { Alarm::BeginRotating, "BeginRotating" },
+            { Alarm::DecreasingPressureBelow207Psi, "DecreasingPressureBelow207Psi" },
+            { Alarm::RisingPressure, "RisingPressure" },
+            { Alarm::DecreasingPressureAbove207Psi, "DecreasingPressureAbove207Psi" },
+            { Alarm::Unspecified, "Unspecified" },
+            { Alarm::LowBattery, "LowBattery" }
+        };
+        std::vector<String> result;
+        for (const auto& [alarm, string] : mappings)
+            if ((alarms & static_cast<uint8_t>(alarm)) == static_cast<uint8_t>(alarm))
+                result.push_back(string);
+        return result;
+    }
+    String toString(Alarm) const {
+        auto a = alarmStrings();
+        return a.empty() ? String() : String("(" + join(a, ",") + ")");
+    }
+
+    virtual void dumpDebug(void) const {
+        Serial.printf("Pressure:    %.1f psi\n", static_cast<float>(pressure) / 10.0);
+        Serial.printf("Temperature: %u C°\n", temperature);
+        Serial.printf("Battery:     %.1f V\n", static_cast<float>(battery) / 10.0);
+        Serial.printf("Alarm:       %s %s\n", toBinaryString(alarms).c_str(), toString(static_cast<Alarm>(alarms)).c_str());
+    }
+
+    void decode(const uint8_t* data, size_t size) {
+        alarms = data[0];
+        battery = data[1];
+        temperature = data[2];
+        pressure = ((static_cast<uint16_t>(data[3]) << 8) | static_cast<uint16_t>(data[4])) - 145;
+        uint16_t checksum = (static_cast<uint16_t>(data[5]) << 8) | static_cast<uint16_t>(data[6]);
+        (void)checksum;
+    }
+
+    bool valid() const {
+        return true;    // for now
+    }
+    TpmsData(const uint8_t* data, size_t size) {
+        decode(data, size);
+    }
+    TpmsData() {}
+};
+
+#include <optional>
+
+// -----------------------------------------------------------------------------------------------
+
+struct TpmsDataBluetooth : public TpmsData {
+
+    const BLEAddress address;
+    const std::optional<String> name;
+    const std::optional<int> rssi;
+    const std::optional<uint8_t> txpower;
+
+    explicit TpmsDataBluetooth(BLEAdvertisedDevice& device)
+        : address(device.getAddress()),
+          name(device.haveName() ? std::optional<String>(device.getName()) : std::nullopt), rssi(device.haveRSSI() ? std::optional<int>(device.getRSSI()) : std::nullopt), txpower(device.haveTXPower() ? std::optional<uint8_t>(device.getTXPower()) : std::nullopt) {
+        import(device);
+    }
+
+    void dumpDebug(void) const override {
+        Serial.printf("Device:      address=%s, name=%s, rssi=%s, txpower=%s\n", const_cast<BLEAddress&>(address).toString().c_str(), name.has_value() ? name.value().c_str() : "N/A", rssi.has_value() ? String(*rssi).c_str() : "N/A", txpower.has_value() ? String(*txpower).c_str() : "N/A");
+        TpmsData::dumpDebug();
+    }
+
+    static TpmsDataBluetooth fromAdvertisedDevice(BLEAdvertisedDevice& device) {
+        return TpmsDataBluetooth(device);
+    }
+
+private:
+    void import(BLEAdvertisedDevice& device) {
+        decode(reinterpret_cast <const uint8_t*> (device.getManufacturerData().c_str()), device.getManufacturerData().length());
+    }
+};
+
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
