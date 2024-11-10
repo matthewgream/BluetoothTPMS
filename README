@@ -1,0 +1,16 @@
+/*
+
+as derived from https://github.com/andi38/TPMS
+
+BLE advertised device [38:89:00:00:36:02] -- Name: , Address: 38:89:00:00:36:02, manufacturer data: 801e180097a492, serviceUUID: 000027a5-0000-1000-8000-00805f9b34fb, rssi: -65
+BLE found TPMS device: 38:89:00:00:36:02
+Device:      address=38:89:00:00:36:02, name=N/A, rssi=-65, txpower=N/A
+Pressure:    0.6 psi
+Temperature: 24 C°
+Battery:     3.0 V
+Alarm:       10000000 (ZeroPressure)
+    0011: <PAYLOAD>
+    0000: 03 03 A5 27 03 08 42 52  08 FF 80 1E 18 00 97 A4   ...'..BR ........ 
+    0010: 92                                                 .         
+
+*/
