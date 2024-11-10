@@ -71,8 +71,8 @@ Temperature: 24 C°
 Battery:     3.0 V
 Alarm:       10000000 (ZeroPressure)
     0011: <PAYLOAD>
-    0000: 03 03 A5 27 03 08 42 52  08 FF 80 1E 18 00 97 A4   ...'..BR ........ 
-    0010: 92                                                 .         
+    0000: 03 03 A5 27 03 08 42 52  08 FF 80 1E 18 00 97 A4   ...'..BR ........
+    0010: 92                                                 .
 
 */
 
@@ -202,12 +202,12 @@ class TpmsScanner : protected BLEAdvertisedDeviceCallbacks {
     }
 
     static constexpr int SCAN_TIME = 5;
-    BLEScan* scanner;
+    BLEScan* scanner = nullptr;
     const std::vector<String> _addresses;
 
 public:
 
-    TpmsScanner(const std::initializer_list<String>& addresses)
+    explicit TpmsScanner(const std::initializer_list<String>& addresses)
         : _addresses(addresses) {}
 
     void scan() {
