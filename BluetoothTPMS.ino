@@ -156,7 +156,7 @@ struct TpmsDataBluetooth : public TpmsData {
     const std::optional<int> rssi;
     const std::optional<uint8_t> txpower;
 
-    TpmsDataBluetooth(BLEAdvertisedDevice& device)
+    explicit TpmsDataBluetooth(BLEAdvertisedDevice& device)
         : address(device.getAddress()),
           name(device.haveName() ? std::optional<String>(device.getName()) : std::nullopt), rssi(device.haveRSSI() ? std::optional<int>(device.getRSSI()) : std::nullopt), txpower(device.haveTXPower() ? std::optional<uint8_t>(device.getTXPower()) : std::nullopt) {
         import(device);
@@ -173,7 +173,7 @@ struct TpmsDataBluetooth : public TpmsData {
 
 private:
     void import(BLEAdvertisedDevice& device) {
-        decode((uint8_t*)device.getManufacturerData().c_str(), device.getManufacturerData().length());
+        decode(reinterpret_cast <const uint8_t*> (device.getManufacturerData().c_str()), device.getManufacturerData().length());
     }
 };
 
