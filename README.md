@@ -5,7 +5,7 @@ The device (an inexpensive Tyre Pressure Monitoring System) emits 7 bytes in the
 
 It's simple to decode and store this data, other than the 16 bit checksum which is of an unknown algorithm.
 
-/*
+```
 
 BLE advertised device [38:89:00:00:36:02] -- Name: , Address: 38:89:00:00:36:02, manufacturer data: 801e180097a492, serviceUUID: 000027a5-0000-1000-8000-00805f9b34fb, rssi: -65
 BLE found TPMS device: 38:89:00:00:36:02
@@ -18,4 +18,4 @@ Alarm:       10000000 (ZeroPressure)
     0000: 03 03 A5 27 03 08 42 52  08 FF 80 1E 18 00 97 A4   ...'..BR ........ 
     0010: 92                                                 .         
 
-*/
+```
