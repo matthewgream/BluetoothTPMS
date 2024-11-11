@@ -3,7 +3,7 @@ Insights from https://github.com/andi38/TPMS.
 
 The device (an inexpensive Tyre Pressure Monitoring System) emits 7 bytes in the manufacturer data field of its advertisement.
 
-It's simple to decode and store this data, other than the 16 bit checksum which is of an unknown algorithm.
+It's simple to decode and store this data, other than the 16 bit checksum which is of an unknown algorithm. This is an example output below. Note the MAC address will vary depending on vendor. You can typically view 2-3 bytes of the address in the application (e.g. SYTPMS).
 
 ```
 
