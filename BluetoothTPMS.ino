@@ -6,53 +6,7 @@
 
 #include "BluetoothTPMS.hpp"
 
-// -----------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------
-
-__attribute__((unused)) void dump(const char* label, const uint8_t* data, const size_t size, const size_t offs) {
-    static constexpr const char lookup[] = "0123456789ABCDEF";
-    std::array<char, (16 * 3 + 2) + 1 + (16 * 1 + 2) + 1> buffer;
-    Serial.printf("    %04X: <%s>\n", size, label);
-    for (size_t i = 0; i < size; i += 16) {
-        auto* position = buffer.data();
-        for (size_t j = 0; j < 16; j++) {
-            if ((i + j) < size)
-                *position++ = lookup[(data[i + j] >> 4) & 0x0F], *position++ = lookup[(data[i + j] >> 0) & 0x0F], *position++ = ' ';
-            else
-                *position++ = ' ', *position++ = ' ', *position++ = ' ';
-            if ((j + 1) % 8 == 0)
-                *position++ = ' ';
-        }
-        *position++ = ' ';
-        for (size_t j = 0; j < 16; j++) {
-            if ((i + j) < size)
-                *position++ = isprint(data[i + j]) ? (char)data[i + j] : '.';
-            else
-                *position++ = ' ';
-            if ((j + 1) % 8 == 0)
-                *position++ = ' ';
-        }
-        *position++ = '\0';
-        Serial.printf("    %04X: %s\n", offs + i, buffer.data());
-    }
-}
-
-__attribute__((unused)) String toBinaryString(uint8_t value) {
-    char binStr[8];
-    for (int i = 7; i >= 0; i--)
-        binStr[i] = (value & (1 << (7 - i))) ? '1' : '0';
-    return String(binStr, 8);
-}
-
-#include <algorithm>
-#include <numeric>
-#include <vector>
-
-__attribute__((unused)) String join(const std::vector<String>& elements, const String& delimiter) {
-    return elements.empty() ? String() : std::accumulate(std::next(elements.begin()), elements.end(), elements[0], [&delimiter](const String& a, const String& b) {
-        return a + delimiter + b;
-    });
-}
+void dumpDebug(const char* label, const uint8_t* data, const size_t size, const size_t offs = 0);
 
 // -----------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------
@@ -74,7 +28,7 @@ class TpmsScanner : protected BLEAdvertisedDeviceCallbacks {
             if (tpms.valid())
                 tpms.dumpDebug();
 
-            dump("PAYLOAD", device.getPayload(), device.getPayloadLength());
+            dumpDebug("PAYLOAD", device.getPayload(), device.getPayloadLength());
         }
     }
 
@@ -118,6 +72,38 @@ void setup() {
 }
 void loop() {
     tpmsScanner.scan();
+}
+
+
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
+
+void dumpDebug(const char* label, const uint8_t* data, const size_t size, const size_t offs) {
+    static constexpr const char lookup[] = "0123456789ABCDEF";
+    std::array<char, (16 * 3 + 2) + 1 + (16 * 1 + 2) + 1> buffer;
+    Serial.printf("    %04X: <%s>\n", size, label);
+    for (size_t i = 0; i < size; i += 16) {
+        auto* position = buffer.data();
+        for (size_t j = 0; j < 16; j++) {
+            if ((i + j) < size)
+                *position++ = lookup[(data[i + j] >> 4) & 0x0F], *position++ = lookup[(data[i + j] >> 0) & 0x0F], *position++ = ' ';
+            else
+                *position++ = ' ', *position++ = ' ', *position++ = ' ';
+            if ((j + 1) % 8 == 0)
+                *position++ = ' ';
+        }
+        *position++ = ' ';
+        for (size_t j = 0; j < 16; j++) {
+            if ((i + j) < size)
+                *position++ = isprint(data[i + j]) ? (char)data[i + j] : '.';
+            else
+                *position++ = ' ';
+            if ((j + 1) % 8 == 0)
+                *position++ = ' ';
+        }
+        *position++ = '\0';
+        Serial.printf("    %04X: %s\n", offs + i, buffer.data());
+    }
 }
 
 // -----------------------------------------------------------------------------------------------

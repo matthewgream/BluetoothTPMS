@@ -4,33 +4,13 @@
 
 #include <BLEAdvertisedDevice.h>
 
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
+
+#include <algorithm>
+#include <numeric>
 #include <vector>
 #include <optional>
-
-// -----------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------
-
-//
-// derived from https://github.com/andi38/TPMS
-//
-// BLE advertised device [38:89:00:00:36:02] -- Name: , Address: 38:89:00:00:36:02, manufacturer data: 801e180097a492, serviceUUID: 000027a5-0000-1000-8000-00805f9b34fb, rssi: -65
-// BLE found TPMS device: 38:89:00:00:36:02
-// Device:      address=38:89:00:00:36:02, name=N/A, rssi=-65, txpower=N/A
-// Pressure:    0.6 psi
-// Temperature: 24 C°
-// Battery:     3.0 V
-// Alarm:       10000000 (ZeroPressure)
-//     0011: <PAYLOAD>
-//     0000: 03 03 A5 27 03 08 42 52  08 FF 80 1E 18 00 97 A4   ...'..BR ........
-//     0010: 92                                                 .
-//
-
-// -----------------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------------
-
-void dump(const char* label, const uint8_t* data, const size_t size, const size_t offs = 0);
-String toBinaryString(uint8_t value);
-String join(const std::vector<String>& elements, const String& delimiter);
 
 // -----------------------------------------------------------------------------------------------
 
@@ -74,11 +54,22 @@ struct TpmsData {
         return result;
     }
     String toString(Alarm) const {
-        auto a = alarmStrings();
+        const auto join = [](const std::vector<String>& elements, const String& delimiter) -> String {
+            return elements.empty() ? String() : std::accumulate(std::next(elements.begin()), elements.end(), elements[0], [&delimiter](const String& a, const String& b) {
+                return a + delimiter + b;
+            });
+        };
+        const auto a = alarmStrings();
         return a.empty() ? String() : String("(" + join(a, ",") + ")");
     }
 
     virtual void dumpDebug(void) const {
+        const auto toBinaryString = [](uint8_t value) -> String {
+            char binStr[8];
+            for (int i = 7; i >= 0; i--)
+                binStr[i] = (value & (1 << (7 - i))) ? '1' : '0';
+            return String(binStr, 8);
+        };
         Serial.printf("Pressure:    %.1f psi\n", static_cast<float>(pressure) / 10.0);
         Serial.printf("Temperature: %u C°\n", temperature);
         Serial.printf("Battery:     %.1f V\n", static_cast<float>(battery) / 10.0);
@@ -131,7 +122,7 @@ struct TpmsDataBluetooth : public TpmsData {
 
 private:
     void import(BLEAdvertisedDevice& device) {
-        decode(reinterpret_cast <const uint8_t*> (device.getManufacturerData().c_str()), device.getManufacturerData().length());
+        decode(reinterpret_cast<const uint8_t*>(device.getManufacturerData().c_str()), device.getManufacturerData().length());
     }
 };
 

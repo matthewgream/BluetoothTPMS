@@ -1,0 +1,27 @@
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+TpmsData	KEYWORD1
+TpmsDataBluetooth	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+dumpDebug	KEYWORD2
+fromAdvertisedDevice	KEYWORD2
+alarmStrings	KEYWORD2
+toString	KEYWORD2
+decode	KEYWORD2
+valid	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
