@@ -28,9 +28,9 @@ struct TpmsData {
         LowBattery = 0xFF
     };
 
-    uint16_t pressure {};
-    uint8_t temperature {};
-    uint8_t battery {};
+    float pressure {};
+    int temperature {};
+    float battery {};
     uint8_t alarms {};
 
     bool _valid { false };
@@ -70,17 +70,17 @@ struct TpmsData {
                 binStr [i] = (value & (1 << (7 - i))) ? '1' : '0';
             return String (binStr, 8);
         };
-        Serial.printf ("Pressure:    %.1f psi\n", static_cast<float> (pressure) / 10.0);
+        Serial.printf ("Pressure:    %.1f psi\n", pressure);
         Serial.printf ("Temperature: %u C°\n", temperature);
-        Serial.printf ("Battery:     %.1f V\n", static_cast<float> (battery) / 10.0);
+        Serial.printf ("Battery:     %.1f V\n", battery);
         Serial.printf ("Alarm:       %s %s\n", toBinaryString (alarms).c_str (), toString (static_cast<Alarm> (alarms)).c_str ());
     }
 
     void decode (const uint8_t *data, size_t size) {
         alarms = data [0];
-        battery = data [1];
-        temperature = data [2];
-        pressure = ((static_cast<uint16_t> (data [3]) << 8) | static_cast<uint16_t> (data [4])) - 145;
+        battery = static_cast<float> (data [1]) / 10.0;
+        temperature = static_cast <int> (data [2]);
+        pressure = static_cast<float> (((static_cast<uint16_t> (data [3]) << 8) | static_cast<uint16_t> (data [4])) - 145) / 10.0;
         uint16_t checksum = (static_cast<uint16_t> (data [5]) << 8) | static_cast<uint16_t> (data [6]);
         (void) checksum;
     }
@@ -100,13 +100,15 @@ struct TpmsData {
 
 struct TpmsDataBluetooth : public TpmsData {
 
-    const BLEAddress address;
-    const std::optional<String> name;
-    const std::optional<int> rssi;
-    const std::optional<uint8_t> txpower;
+    String address;
+    std::optional<String> name;
+    std::optional<int> rssi;
+    std::optional<uint8_t> txpower;
 
+    explicit TpmsDataBluetooth () {        
+    }
     explicit TpmsDataBluetooth (BLEAdvertisedDevice &device) :
-        address (device.getAddress ()),
+        address (device.getAddress ().toString ()),
         name (device.haveName () ? std::optional<String> (device.getName ()) : std::nullopt),
         rssi (device.haveRSSI () ? std::optional<int> (device.getRSSI ()) : std::nullopt),
         txpower (device.haveTXPower () ? std::optional<uint8_t> (device.getTXPower ()) : std::nullopt) {
@@ -114,7 +116,7 @@ struct TpmsDataBluetooth : public TpmsData {
     }
 
     void dumpDebug (void) const override {
-        Serial.printf ("Device:      address=%s, name=%s, rssi=%s, txpower=%s\n", const_cast<BLEAddress &> (address).toString ().c_str (), name.has_value () ? name.value ().c_str () : "N/A", rssi.has_value () ? String (*rssi).c_str () : "N/A", txpower.has_value () ? String (*txpower).c_str () : "N/A");
+        Serial.printf ("Device:      address=%s, name=%s, rssi=%s, txpower=%s\n", address.c_str (), name.has_value () ? name.value ().c_str () : "N/A", rssi.has_value () ? String (*rssi).c_str () : "N/A", txpower.has_value () ? String (*txpower).c_str () : "N/A");
         TpmsData::dumpDebug ();
     }
 
