@@ -63,7 +63,7 @@ struct TpmsData {
         return a.empty () ? String () : String ("(" + join (a, ",") + ")");
     }
 
-    virtual void dumpDebug (void) const {
+    virtual void debugDump (void) const {
         const auto toBinaryString = [] (uint8_t value) -> String {
             char binStr [8];
             for (int i = 7; i >= 0; i--)
@@ -115,9 +115,9 @@ struct TpmsDataBluetooth : public TpmsData {
         import (device);
     }
 
-    void dumpDebug (void) const override {
+    void debugDump (void) const override {
         Serial.printf ("Device:      address=%s, name=%s, rssi=%s, txpower=%s\n", address.c_str (), name.has_value () ? name.value ().c_str () : "N/A", rssi.has_value () ? String (*rssi).c_str () : "N/A", txpower.has_value () ? String (*txpower).c_str () : "N/A");
-        TpmsData::dumpDebug ();
+        TpmsData::debugDump ();
     }
 
     static TpmsDataBluetooth fromAdvertisedDevice (BLEAdvertisedDevice &device) {

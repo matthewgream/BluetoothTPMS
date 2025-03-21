@@ -6,7 +6,7 @@
 
 #include "BluetoothTPMS.hpp"
 
-void dumpDebug (const char *label, const uint8_t *data, const size_t size, const size_t offs = 0);
+void debugDump (const char *label, const uint8_t *data, const size_t size, const size_t offs = 0);
 
 // -----------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------
@@ -21,14 +21,14 @@ class TpmsScanner : protected BLEAdvertisedDeviceCallbacks {
         const auto address = device.getAddress ().toString ();
         Serial.printf ("BLE advertised device [%s] -- %s\n", address.c_str (), device.toString ().c_str ());
 
-        if (std::ranges::find (_addresses, address) != _addresses.end ()) {
+        if (std::find (_addresses.begin (), _addresses.end (), address) != _addresses.end ()) {
             Serial.printf ("BLE found TPMS device: %s\n", address.c_str ());
 
             auto tpms = TpmsDataBluetooth::fromAdvertisedDevice (device);
             if (tpms.valid ())
-                tpms.dumpDebug ();
+                tpms.debugDump ();
 
-            dumpDebug ("PAYLOAD", device.getPayload (), device.getPayloadLength ());
+            debugDump ("PAYLOAD", device.getPayload (), device.getPayloadLength ());
         }
     }
 
@@ -76,26 +76,22 @@ void loop () {
 // -----------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------
 
-void dumpDebug (const char *label, const uint8_t *data, const size_t size, const size_t offs) {
+void debugDump (const char *label, const uint8_t *data, const size_t size, const size_t offs) {
     static constexpr const char lookup [] = "0123456789ABCDEF";
     std::array<char, (16 * 3 + 2) + 1 + (16 * 1 + 2) + 1> buffer;
     Serial.printf ("    %04X: <%s>\n", size, label);
     for (size_t i = 0; i < size; i += 16) {
         auto *position = buffer.data ();
         for (size_t j = 0; j < 16; j++) {
-            if ((i + j) < size)
-                *position++ = lookup [(data [i + j] >> 4) & 0x0F], *position++ = lookup [(data [i + j] >> 0) & 0x0F], *position++ = ' ';
-            else
-                *position++ = ' ', *position++ = ' ', *position++ = ' ';
+            *position++ = ((i + j) < size) ? lookup [(data [i + j] >> 4) & 0x0F] : ' ';
+            *position++ = ((i + j) < size) ? lookup [(data [i + j] >> 0) & 0x0F] : ' ';
+            *position++ = ' '
             if ((j + 1) % 8 == 0)
                 *position++ = ' ';
         }
         *position++ = ' ';
         for (size_t j = 0; j < 16; j++) {
-            if ((i + j) < size)
-                *position++ = isprint (data [i + j]) ? (char) data [i + j] : '.';
-            else
-                *position++ = ' ';
+            *position++ = ((i + j) < size) ? (isprint (data [i + j]) ? (char) data [i + j] : '.') : ' ';
             if ((j + 1) % 8 == 0)
                 *position++ = ' ';
         }
